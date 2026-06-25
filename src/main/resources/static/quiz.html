@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Quiz</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+            overflow-x: hidden;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 { color: white; font-size: 28px; margin-bottom: 5px; }
+        .header p { color: rgba(255,255,255,0.8); }
+        .progress-bar {
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            height: 8px;
+            margin: 15px 0;
+        }
+        .progress {
+            background: white;
+            height: 8px;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .question-num { color: #667eea; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+        .question-text { font-size: 22px; color: #333; margin-bottom: 25px; line-height: 1.5; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .option {
+            padding: 15px 20px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .option:hover { border-color: #667eea; background: #f0f0ff; }
+        .option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea22, #764ba222);
+            color: #667eea;
+            font-weight: bold;
+        }
+        .option-label {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .selected .option-label { background: #764ba2; }
+        .nav-buttons { display: flex; justify-content: space-between; gap: 15px; }
+        .btn { padding: 14px 30px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-back { background: #eee; color: #555; }
+        .btn-next { background: linear-gradient(135deg, #667eea, #764ba2); color: white; flex: 1; }
+        .btn-submit { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; flex: 1; }
+
+        /* Score Screen */
+        .score-screen { display: none; text-align: center; position: relative; overflow: hidden; }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            animation: popIn 0.5s ease;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .score-number { font-size: 48px; font-weight: bold; color: white; }
+        .score-label { color: rgba(255,255,255,0.8); font-size: 14px; }
+        .score-message { font-size: 28px; color: #333; margin-bottom: 10px; font-weight: bold; }
+        .score-detail { color: #777; margin-bottom: 25px; font-size: 16px; }
+
+        .btn-home {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn-retry {
+            background: #eee;
+            color: #555;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            top: -20px;
+            animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Cheer up animation */
+        .cheerup-emoji {
+            font-size: 80px;
+            animation: bounce 0.6s infinite alternate;
+            display: block;
+            margin: 0 auto 15px;
+        }
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-15px); }
+        }
+
+        /* Stars for perfect score */
+        .stars {
+            font-size: 40px;
+            animation: starSpin 1s ease;
+            display: block;
+            margin-bottom: 10px;
+        }
+        @keyframes starSpin {
+            0% { transform: rotate(-30deg) scale(0); opacity: 0; }
+            100% { transform: rotate(0deg) scale(1); opacity: 1; }
+        }
+
+        /* Pulse for good score */
+        .trophy {
+            font-size: 80px;
+            animation: pulse 0.8s ease infinite alternate;
+            display: block;
+            margin-bottom: 10px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 id="quizTitle">Loading...</h1>
+        <p id="quizProgress">Question 1 of ?</p>
+        <div class="progress-bar">
+            <div class="progress" id="progressBar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <div class="card">
+        <!-- Quiz Questions -->
+        <div id="quizScreen">
+            <div class="question-num" id="questionNum">Question 1</div>
+            <div class="question-text" id="questionText">Loading...</div>
+            <div class="options" id="optionsContainer"></div>
+            <div class="nav-buttons">
+                <button class="btn btn-back" onclick="prevQuestion()">← Back</button>
+                <button class="btn btn-next" id="nextBtn" onclick="nextQuestion()">Next →</button>
+                <button class="btn btn-submit" id="submitBtn" onclick="submitQuiz()" style="display:none">
+                    Submit Quiz ✓
+                </button>
+            </div>
+        </div>
+
+        <!-- Score Screen -->
+        <div id="scoreScreen" class="score-screen">
+            <div id="topEmoji"></div>
+            <div class="score-circle" id="scoreCircle">
+                <div class="score-number" id="scorePercent">0%</div>
+                <div class="score-label">Score</div>
+            </div>
+            <div class="score-message" id="scoreMessage"></div>
+            <div class="score-detail" id="scoreDetail"></div>
+            <br>
+            <button class="btn-retry" onclick="retryQuiz()">🔄 Try Again</button>
+            <button class="btn-home" onclick="goHome()">🏠 All Quizzes</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const quizId = localStorage.getItem('quizId');
+        const quizTitle = localStorage.getItem('quizTitle');
+
+        if (!token) window.location.href = '/index.html';
+        if (!quizId) window.location.href = '/quizzes.html';
+
+        document.getElementById('quizTitle').textContent = '🎯 ' + quizTitle;
+
+        let questions = [];
+        let currentIndex = 0;
+        let userAnswers = {};
+
+        async function loadQuestions() {
+            const response = await fetch(`/quizzes/${quizId}/questions`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            questions = await response.json();
+            showQuestion(0);
+        }
+
+        function showQuestion(index) {
+            const q = questions[index];
+            currentIndex = index;
+
+            document.getElementById('questionNum').textContent = 'Question ' + (index + 1) + ' of ' + questions.length;
+            document.getElementById('quizProgress').textContent = 'Question ' + (index + 1) + ' of ' + questions.length;
+            document.getElementById('questionText').textContent = q.questionText;
+
+            const progress = ((index + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+
+            const options = [
+                { label: 'A', text: q.optionA },
+                { label: 'B', text: q.optionB },
+                { label: 'C', text: q.optionC },
+                { label: 'D', text: q.optionD }
+            ];
+
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            options.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option' + (userAnswers[q.id] === opt.label ? ' selected' : '');
+                div.innerHTML = `<span class="option-label">${opt.label}</span><span>${opt.text}</span>`;
+                div.onclick = () => selectAnswer(q.id, opt.label, div);
+                container.appendChild(div);
+            });
+
+            document.getElementById('nextBtn').style.display = index < questions.length - 1 ? 'block' : 'none';
+            document.getElementById('submitBtn').style.display = index === questions.length - 1 ? 'block' : 'none';
+        }
+
+        function selectAnswer(questionId, answer, element) {
+            userAnswers[questionId] = answer;
+            document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function nextQuestion() {
+            if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) showQuestion(currentIndex - 1);
+        }
+
+        async function submitQuiz() {
+            const response = await fetch(`/quizzes/${quizId}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ answers: userAnswers })
+            });
+
+            const result = await response.text();
+            const match = result.match(/(\d+)\/(\d+)\s*\((\d+)%\)/);
+
+            if (match) {
+                const correct = parseInt(match[1]);
+                const total = parseInt(match[2]);
+                const percent = parseInt(match[3]);
+
+                document.getElementById('scorePercent').textContent = percent + '%';
+                document.getElementById('scoreDetail').textContent =
+                    `You got ${correct} out of ${total} questions correct!`;
+
+                const circle = document.getElementById('scoreCircle');
+                const topEmoji = document.getElementById('topEmoji');
+                const message = document.getElementById('scoreMessage');
+
+                if (percent === 100) {
+                    // PERFECT — Party blast!
+                    circle.style.background = 'linear-gradient(135deg, #f7971e, #ffd200)';
+                    topEmoji.innerHTML = '<span class="stars">🌟⭐🌟</span>';
+                    message.textContent = '🏆 PERFECT SCORE!';
+                    message.style.color = '#f7971e';
+                    launchConfetti();
+                } else if (percent >= 80) {
+                    // EXCELLENT
+                    circle.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)';
+                    topEmoji.innerHTML = '<span class="trophy">🎉</span>';
+                    message.textContent = '🎊 Excellent Work!';
+                    message.style.color = '#11998e';
+                    launchConfetti();
+                } else if (percent >= 60) {
+                    // GOOD
+                    circle.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                    topEmoji.innerHTML = '<span class="trophy">👍</span>';
+                    message.textContent = '😊 Good Job!';
+                    message.style.color = '#667eea';
+                } else if (percent >= 40) {
+                    // AVERAGE
+                    circle.style.background = 'linear-gradient(135deg, #f7971e, #ffd200)';
+                    topEmoji.innerHTML = '<span class="trophy">📚</span>';
+                    message.textContent = '🙂 Keep Practicing!';
+                    message.style.color = '#f7971e';
+                } else if (percent === 0) {
+                    // ZERO — Cheer up!
+                    circle.style.background = 'linear-gradient(135deg, #eb3349, #f45c43)';
+                    topEmoji.innerHTML = '<span class="cheerup-emoji">💪</span>';
+                    message.textContent = "Don't Give Up! You Can Do It!";
+                    message.style.color = '#eb3349';
+                } else {
+                    // LOW
+                    circle.style.background = 'linear-gradient(135deg, #eb3349, #f45c43)';
+                    topEmoji.innerHTML = '<span class="cheerup-emoji">😊</span>';
+                    message.textContent = '💪 Try Again, You Got This!';
+                    message.style.color = '#eb3349';
+                }
+            }
+
+            document.getElementById('quizScreen').style.display = 'none';
+            document.getElementById('scoreScreen').style.display = 'block';
+        }
+
+        function launchConfetti() {
+            const colors = ['#667eea', '#764ba2', '#f7971e', '#ffd200', '#11998e', '#38ef7d', '#eb3349', '#ff6b6b'];
+            const container = document.getElementById('confettiContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 120; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                piece.style.width = (Math.random() * 10 + 6) + 'px';
+                piece.style.height = (Math.random() * 10 + 6) + 'px';
+                piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                piece.style.animationDelay = (Math.random() * 2) + 's';
+                container.appendChild(piece);
+            }
+
+            // Clear confetti after 5 seconds
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        function retryQuiz() {
+            userAnswers = {};
+            document.getElementById('confettiContainer').innerHTML = '';
+            document.getElementById('quizScreen').style.display = 'block';
+            document.getElementById('scoreScreen').style.display = 'none';
+            showQuestion(0);
+        }
+
+        function goHome() {
+            window.location.href = '/quizzes.html';
+        }
+
+        loadQuestions();
+    </script>
+</body>
+</html>

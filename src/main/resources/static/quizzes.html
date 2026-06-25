@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Quizzes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { color: white; font-size: 32px; }
+        .subtitle { color: rgba(255,255,255,0.8); font-size: 16px; }
+        .logout {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .logout:hover { background: white; color: #667eea; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .category {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .Programming { background: #e3f2fd; color: #1565c0; }
+        .Science { background: #e8f5e9; color: #2e7d32; }
+        .General { background: #fff3e0; color: #e65100; }
+        .card h2 { color: #333; margin-bottom: 10px; font-size: 20px; }
+        .card p { color: #777; font-size: 14px; margin-bottom: 20px; }
+        .start-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .start-btn:hover { opacity: 0.9; }
+        .welcome {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+        }
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🎯 Quiz App</h1>
+            <p class="subtitle">Choose a quiz to start!</p>
+        </div>
+        <div style="text-align:right">
+            <p class="welcome" id="welcomeMsg"></p>
+            <br>
+            <button class="logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div id="quizGrid" class="grid">
+        <div class="loading">Loading quizzes... ⏳</div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const email = localStorage.getItem('email');
+
+        if (!token) {
+            window.location.href = '/index.html';
+        }
+
+        document.getElementById('welcomeMsg').textContent = '👋 Welcome, ' + (email || 'User');
+
+        async function loadQuizzes() {
+            try {
+                const response = await fetch('/quizzes', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const quizzes = await response.json();
+                const grid = document.getElementById('quizGrid');
+                grid.innerHTML = '';
+
+                quizzes.forEach(quiz => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <span class="category ${quiz.category}">${quiz.category}</span>
+                        <h2>${quiz.title}</h2>
+                        <p>${quiz.description}</p>
+                        <button class="start-btn" onclick="startQuiz(${quiz.id}, '${quiz.title}')">
+                            Start Quiz →
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                document.getElementById('quizGrid').innerHTML =
+                    '<p style="color:white">Error loading quizzes!</p>';
+            }
+        }
+
+        function startQuiz(id, title) {
+            localStorage.setItem('quizId', id);
+            localStorage.setItem('quizTitle', title);
+            window.location.href = '/quiz.html';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+
+        loadQuizzes();
+    </script>
+</body>
+</html>
